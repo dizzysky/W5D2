@@ -151,36 +151,27 @@ end
 def prolific_actors
   # Obtain a list in alphabetical order of actors who've had at least 15
   # starring roles.
-  # execute(<<-SQL)
 
-  # SELECT
-  # name
-  # FROM
-  # movies
-  # JOIN
-  #   castings ON movies.id = castings.movie_id
-  # JOIN
-  #   actors ON castings.actor_id = actors.id
-  # WHERE
-  #   COUNT(ord) > 15;
-  # SQL
 
   execute(<<-SQL)
-  SELECT
-    actors.name
+  select 
+  role_numbers.name 
+  from (SELECT
+  count(name) as number_of_roles, 
+  name
   FROM
-    actors
+    movies
   JOIN
-    castings ON castings.actor_id = actors.id;
+    castings ON movies.id = castings.movie_id
+  JOIN
+    actors ON castings.actor_id = actors.id 
+  WHERE
+    ord = 1
+  group by 
+    name) as role_numbers
+  where role_numbers.number_of_roles >= 15   
+  order by role_numbers.name 
     SQL
-  # WHERE
-  #   castings.ord = 1
-  # GROUP BY
-  #   actors.name
-  # HAVING
-  #   COUNT(*) >= 15
-  # ORDER BY
-  #   actors.name;
 
 end
 
@@ -188,11 +179,45 @@ def films_by_cast_size
   # List the films released in the year 1978 ordered by the number of actors
   # in the cast (descending), then by title (ascending).
   execute(<<-SQL)
+  select 
+  film_casts.title,
+  number_actors 
+  from 
+  (select count(name) as number_actors, 
+  title 
+  from 
+  actors 
+  join castings on actors.id = castings.actor_id
+  join movies on castings.movie_id = movies.id
+  where yr = 1978 
+  group by title) as film_casts 
+  order by film_casts.number_actors desc, title asc 
+
   SQL
 end
 
 def colleagues_of_garfunkel
   # List all the people who have played alongside 'Art Garfunkel'.
   execute(<<-SQL)
+with art_movies as (
+  SELECT
+  title
+FROM
+  movies
+JOIN
+  castings ON movies.id = castings.movie_id
+JOIN
+  actors ON castings.actor_id = actors.id
+WHERE
+  actors.name = 'Art Garfunkel')
+
+  select distinct(name)
+  from 
+  actors 
+  join castings on actors.id = castings.actor_id
+  join movies on castings.movie_id = movies.id
+  join art_movies on art_movies.title = movies.title 
+  where name <> 'Art Garfunkel'
+
   SQL
 end
